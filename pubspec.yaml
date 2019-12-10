@@ -20,6 +20,8 @@ module:
   androidX: true
 
 dependencies:
+  flutter_picker: ^1.1.0
+  bubble: ^1.1.9+1
   dash_chat: ^1.0.9
   line_awesome_icons: ^1.0.4+2
   get_it: ^3.0.3

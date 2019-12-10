@@ -1,6 +1,4 @@
-import 'dart:async';
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dash_chat/dash_chat.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -17,69 +15,70 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   final GlobalKey<DashChatState> _chatViewKey = GlobalKey<DashChatState>();
 
-  final ChatUser user = ChatUser(
+  List<ChatMessage> messages = List<ChatMessage>();
+  var m = List<ChatMessage>();
+  var scrollController = ScrollController();
+  String chatID;
+  String user1 = 'aaaaaaaa1111';
+  String user2 = 'aaaaaaaa2222';
+  var i = 0;
+
+  ChatUser user = ChatUser(
     name: "Fayeed",
     uid: "123klg789",
     avatar: "https://www.wrappixel.com/ampleadmin/assets/images/users/4.jpg",
   );
 
-  final ChatUser otherUser = ChatUser(
-    name: "Mrfatty",
-    uid: "25649654",
-  );
+  Future onSend(ChatMessage message) async {
+    if (chatID == "temp") {
+      chatID = "generatedID";
 
-  List<ChatMessage> messages = List<ChatMessage>();
-  var m = List<ChatMessage>();
-
-  var i = 0;
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  void systemMessage() {
-    Timer(Duration(milliseconds: 300), () {
-      if (i < 6) {
-        setState(() {
-          messages = [...messages, m[i]];
-        });
-        i++;
-      }
-      Timer(Duration(milliseconds: 300), () {
-        _chatViewKey.currentState.scrollController
-          ..animateTo(
-            _chatViewKey.currentState.scrollController.position.maxScrollExtent,
-            curve: Curves.easeOut,
-            duration: const Duration(milliseconds: 300),
-          );
+      await Firestore.instance.runTransaction((transaction) async {
+        await transaction.set(
+            Firestore.instance
+                .collection('users')
+                .document(user1)
+                .collection('messages')
+                .document(chatID),
+            {"OtherUserID": user2});
+        await transaction.set(
+            Firestore.instance
+                .collection('users')
+                .document(user2)
+                .collection('messages')
+                .document(chatID),
+            {"OtherUserID": user1});
       });
-    });
-  }
-
-  void onSend(ChatMessage message) {
-    var documentReference = Firestore.instance
+    }
+    var messageRef = Firestore.instance
+        .collection('messagePool')
+        .document(chatID)
         .collection('messages')
         .document(DateTime.now().millisecondsSinceEpoch.toString());
-
     Firestore.instance.runTransaction((transaction) async {
       await transaction.set(
-        documentReference,
+        messageRef,
         message.toJson(),
       );
-    });
-    /* setState(() {
-      messages = [...messages, message];
-      print(messages.length);
-    });
-    if (i == 0) {
-      systemMessage();
-      Timer(Duration(milliseconds: 600), () {
-        systemMessage();
+    }, timeout: Duration(seconds: 1));
+  }
+
+  Future<String> checkConversation() async {
+    try {
+      return await Firestore.instance
+          .collection('users')
+          .document(user1)
+          .collection('messages')
+          .where("OtherUserID", isEqualTo: user2)
+          .limit(1)
+          .getDocuments()
+          .then((data) {
+        return data.documents.first.documentID;
       });
-    } else {
-      systemMessage();
-    } */
+    } catch (e) {
+      print(e);
+      return "bos";
+    }
   }
 
   @override
@@ -88,130 +87,137 @@ class _ChatPageState extends State<ChatPage> {
       appBar: AppBar(
         title: Text("Chat App"),
       ),
-      body: StreamBuilder(
-          stream: Firestore.instance.collection('messages').snapshots(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Theme.of(context).primaryColor,
-                  ),
-                ),
-              );
-            } else {
-              List<DocumentSnapshot> items = snapshot.data.documents;
-              var messages =
-                  items.map((i) => ChatMessage.fromJson(i.data)).toList();
-              return DashChat(
-                key: _chatViewKey,
-                inverted: false,
-                onSend: onSend,
-                user: user,
-                inputDecoration:
-                    InputDecoration.collapsed(hintText: "Add message here..."),
-                dateFormat: DateFormat('yyyy-MMM-dd'),
-                timeFormat: DateFormat('HH:mm'),
-                messages: messages,
-                showUserAvatar: false,
-                showAvatarForEveryMessage: false,
-                scrollToBottom: false,
-                onPressAvatar: (ChatUser user) {
-                  print("OnPressAvatar: ${user.name}");
-                },
-                onLongPressAvatar: (ChatUser user) {
-                  print("OnLongPressAvatar: ${user.name}");
-                },
-                inputMaxLines: 5,
-                messageContainerPadding: EdgeInsets.only(left: 5.0, right: 5.0),
-                alwaysShowSend: true,
-                inputTextStyle: TextStyle(fontSize: 16.0),
-                inputContainerStyle: BoxDecoration(
-                  border: Border.all(width: 0.0),
-                  color: Colors.white,
-                ),
-                onQuickReply: (Reply reply) {
-                  setState(() {
-                    messages.add(ChatMessage(
-                        text: reply.value,
-                        createdAt: DateTime.now(),
-                        user: user));
+      body: FutureBuilder(
+        future: checkConversation(),
+        builder: (context, AsyncSnapshot snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            if (!snapshot.hasError &&
+                snapshot.hasData &&
+                snapshot.data != "bos")
+              chatID = snapshot.data;
+            else
+              chatID = "temp";
+            print("ChatID:" + chatID);
+            return StreamBuilder(
+                stream: Firestore.instance
+                    .collection('messagePool')
+                    .document(chatID)
+                    .collection('messages')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Theme.of(context).primaryColor,
+                        ),
+                      ),
+                    );
+                  } else {
+                    List<DocumentSnapshot> items = snapshot.data.documents;
+                    var messages =
+                        items.map((i) => ChatMessage.fromJson(i.data)).toList();
+                    return SingleChildScrollView(
+                      child: DashChat(
+                        key: _chatViewKey,
+                        inverted: false,
+                        onSend: (ChatMessage message) {
+                          onSend(message).whenComplete(() {
+                            setState(() {});
+                          });
+                        },
+                        user: user,
+                        inputDecoration: InputDecoration.collapsed(
+                            hintText: "Mesaj gönderin"),
+                        dateFormat: DateFormat('yyyy-MMM-dd'),
+                        timeFormat: DateFormat('HH:mm'),
+                        messages: messages,
+                        showUserAvatar: false,
+                        showAvatarForEveryMessage: false,
 
-                    messages = [...messages];
-                  });
+                        //scrollToBottom: false,
+                        onPressAvatar: (ChatUser user) {
+                          print("OnPressAvatar: ${user.name}");
+                        },
+                        onLongPressAvatar: (ChatUser user) {
+                          print("OnLongPressAvatar: ${user.name}");
+                        },
+                        inputMaxLines: 5,
+                        messageContainerPadding:
+                            EdgeInsets.only(left: 5.0, right: 5.0),
+                        alwaysShowSend: false,
+                        inputTextStyle: TextStyle(fontSize: 16.0),
+                        inputContainerStyle: BoxDecoration(
+                          border: Border.all(width: 0.0),
+                          color: Colors.white,
+                        ),
+                        shouldShowLoadEarlier: false,
+                        showTraillingBeforeSend: true,
+                        trailing: <Widget>[
+                          IconButton(
+                            icon: Icon(Icons.photo),
+                            onPressed: () async {
+                              File result = await ImagePicker.pickImage(
+                                source: ImageSource.gallery,
+                                imageQuality: 100,
+                                maxHeight: 400,
+                                maxWidth: 400,
+                              );
 
-                  Timer(Duration(milliseconds: 300), () {
-                    _chatViewKey.currentState.scrollController
-                      ..animateTo(
-                        _chatViewKey.currentState.scrollController.position
-                            .maxScrollExtent,
-                        curve: Curves.easeOut,
-                        duration: const Duration(milliseconds: 300),
-                      );
+                              if (result != null) {
+                                String time = DateTime.now()
+                                    .millisecondsSinceEpoch
+                                    .toString();
+                                final StorageReference storageRef =
+                                    FirebaseStorage.instance
+                                        .ref()
+                                        .child("users")
+                                        .child(user1)
+                                        .child("images")
+                                        .child(time);
 
-                    if (i == 0) {
-                      systemMessage();
-                      Timer(Duration(milliseconds: 600), () {
-                        systemMessage();
-                      });
-                    } else {
-                      systemMessage();
-                    }
-                  });
-                },
-                onLoadEarlier: () {
-                  print("laoding...");
-                },
-                shouldShowLoadEarlier: false,
-                showTraillingBeforeSend: true,
-                trailing: <Widget>[
-                  IconButton(
-                    icon: Icon(Icons.photo),
-                    onPressed: () async {
-                      File result = await ImagePicker.pickImage(
-                        source: ImageSource.gallery,
-                        imageQuality: 80,
-                        maxHeight: 400,
-                        maxWidth: 400,
-                      );
+                                StorageUploadTask uploadTask =
+                                    storageRef.putFile(
+                                  result,
+                                  StorageMetadata(
+                                    contentType: 'image/jpg',
+                                  ),
+                                );
+                                StorageTaskSnapshot download =
+                                    await uploadTask.onComplete;
 
-                      if (result != null) {
-                        final StorageReference storageRef =
-                            FirebaseStorage.instance.ref().child("chat_images");
+                                String url =
+                                    await download.ref.getDownloadURL();
 
-                        StorageUploadTask uploadTask = storageRef.putFile(
-                          result,
-                          StorageMetadata(
-                            contentType: 'image/jpg',
-                          ),
-                        );
-                        StorageTaskSnapshot download =
-                            await uploadTask.onComplete;
+                                ChatMessage message = ChatMessage(
+                                    text: "", user: user, image: url);
 
-                        String url = await download.ref.getDownloadURL();
+                                var messageRef = Firestore.instance
+                                    .collection('messagePool')
+                                    .document(chatID)
+                                    .collection('messages')
+                                    .document(time);
 
-                        ChatMessage message =
-                            ChatMessage(text: "", user: user, image: url);
-
-                        var documentReference = Firestore.instance
-                            .collection('messages')
-                            .document(DateTime.now()
-                                .millisecondsSinceEpoch
-                                .toString());
-
-                        Firestore.instance.runTransaction((transaction) async {
-                          await transaction.set(
-                            documentReference,
-                            message.toJson(),
-                          );
-                        });
-                      }
-                    },
-                  )
-                ],
-              );
-            }
-          }),
+                                Firestore.instance
+                                    .runTransaction((transaction) async {
+                                  await transaction.set(
+                                    messageRef,
+                                    message.toJson(),
+                                  );
+                                });
+                              }
+                            },
+                          )
+                        ],
+                      ),
+                    );
+                  }
+                });
+          } else {
+            return Center(child: CircularProgressIndicator());
+          }
+        },
+      ),
     );
   }
 }
