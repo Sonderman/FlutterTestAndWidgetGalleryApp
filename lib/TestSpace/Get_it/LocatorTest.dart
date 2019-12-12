@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:widgettestgallery/TestSpace/Get_it/GetSayacValue.dart';
-import 'package:widgettestgallery/locator.dart';
+import 'package:widgetgallerytest/TestSpace/Get_it/GetSayacValue.dart';
+import 'package:widgetgallerytest/locator.dart';
+
 
 class LocatorTest extends StatelessWidget {
   @override

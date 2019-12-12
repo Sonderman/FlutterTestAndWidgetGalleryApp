@@ -8,9 +8,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:596834398485:android:d4d6c5d674ada1dbf7391c",
+        "mobilesdk_app_id": "1:596834398485:android:7a746bde6a774ceef7391c",
         "android_client_info": {
-          "package_name": "com.example.widgettestgallery"
+          "package_name": "com.eventizerapps.widgetgallerytest"
         }
       },
       "oauth_client": [

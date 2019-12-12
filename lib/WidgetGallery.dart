@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:widgettestgallery/TestSpace/ChatWidget.dart';
+import 'package:widgetgallerytest/TestSpace/ChatWidget.dart';
+
 
 class WidgetGallery extends StatelessWidget {
   const WidgetGallery({Key key}) : super(key: key);

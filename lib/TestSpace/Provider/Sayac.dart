@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:widgettestgallery/TestSpace/Provider/SayacProvider.dart';
+import 'package:widgetgallerytest/TestSpace/Provider/SayacProvider.dart';
+
 
 class Sayac extends StatelessWidget {
   const Sayac({Key key}) : super(key: key);
