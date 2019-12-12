@@ -127,6 +127,8 @@ class _ChatPageState extends State<ChatPage> {
                           });
                         },
                         user: user,
+                        scrollController: scrollController,
+                        onLoadEarlier: () {},
                         inputDecoration: InputDecoration.collapsed(
                             hintText: "Mesaj gönderin"),
                         dateFormat: DateFormat('yyyy-MMM-dd'),
