@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:widgetgallerytest/TestSpace/ApiCommunication/ApiCommunication.dart';
 import 'package:widgetgallerytest/TestSpace/ChatWidget.dart';
-
 
 class WidgetGallery extends StatelessWidget {
   const WidgetGallery({Key key}) : super(key: key);
@@ -12,7 +12,6 @@ class WidgetGallery extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    ChatPage chatPage = ChatPage();
     return Scaffold(
       body: Center(
         child: Container(
@@ -20,9 +19,17 @@ class WidgetGallery extends StatelessWidget {
             child: Column(
               children: <Widget>[
                 MaterialButton(
+                  color: Colors.blue,
                   child: Text("ChatWidget1"),
                   onPressed: () {
-                    goToPage(context, chatPage);
+                    goToPage(context, ChatPage());
+                  },
+                ),
+                MaterialButton(
+                  color: Colors.green,
+                  child: Text("ApiCommunication"),
+                  onPressed: () {
+                    goToPage(context, ApiCommunication());
                   },
                 )
               ],
