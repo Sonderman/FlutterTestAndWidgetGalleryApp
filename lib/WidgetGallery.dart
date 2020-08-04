@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:widgetgallerytest/TestSpace/ApiCommunication/ApiCommunication.dart';
 import 'package:widgetgallerytest/TestSpace/ChatWidget.dart';
+import 'package:widgetgallerytest/TestSpace/WebView/ExampleWebView.dart';
+import 'package:widgetgallerytest/TestSpace/WebView/WebView.dart';
 
 class WidgetGallery extends StatelessWidget {
   const WidgetGallery({Key key}) : super(key: key);
 
-  void goToPage(BuildContext context, var page) {
+  void goToPage(BuildContext context, Widget page) {
     Navigator.push(
         context, MaterialPageRoute(builder: (BuildContext context) => page));
   }
@@ -31,7 +33,14 @@ class WidgetGallery extends StatelessWidget {
                   onPressed: () {
                     goToPage(context, ApiCommunication());
                   },
-                )
+                ),
+                MaterialButton(
+                  color: Colors.green,
+                  child: Text("WebView"),
+                  onPressed: () {
+                    goToPage(context, WebViewPage());
+                  },
+                ),
               ],
             ),
           ),
